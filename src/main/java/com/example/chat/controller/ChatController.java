@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -55,25 +56,40 @@ public class ChatController {
     }
 
     @PostMapping("/upload/image")
-    public ResponseEntity<String> uploadImage(
+    public ResponseEntity<?> uploadImage(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "subdir", required = false) String subDir) {
-        try {
-            String fullPath = baseUploadDir + File.separator + "images";
+            @RequestParam("sender") String sender) {
 
-            if (subDir != null && !subDir.trim().isEmpty()) {
-                fullPath = fullPath + File.separator + subDir;
-            }
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            String year = String.valueOf(now.getYear());
+            String month = String.format("%02d", now.getMonthValue());
+
+            // Create directory: /uploads/images/chat/YYYY/MM
+            String subDir = "images/chat/" + year + "/" + month;
+            String fullPath = baseUploadDir + File.separator + subDir;
 
             File dir = new File(fullPath);
             if (!dir.exists())
                 dir.mkdirs();
 
-            Path filePath = Paths.get(fullPath, file.getOriginalFilename());
+            String originalFilename = file.getOriginalFilename();
+            Path filePath = Paths.get(fullPath, originalFilename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String relativePath = filePath.toString().replace(baseUploadDir, "");
-            return ResponseEntity.ok(relativePath.replace("\\", "/"));
+            String relativePath = (subDir + "/" + originalFilename).replace("\\", "/");
+
+            // Save message metadata
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setSender(sender);
+            chatMessage.setMessage(relativePath);
+            chatMessage.setTimestamp(now);
+            chatMessage.setType("image");
+            // chatMessage.setFilePath(relativePath);
+
+            chatService.saveMessage(chatMessage);
+
+            return ResponseEntity.ok(chatMessage);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Upload error: " + e.getMessage());
