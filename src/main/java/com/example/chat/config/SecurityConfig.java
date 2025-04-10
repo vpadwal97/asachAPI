@@ -3,11 +3,9 @@ package com.example.chat.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
@@ -15,10 +13,10 @@ public class SecurityConfig {
         http
             .cors().and()
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/ws/**", "/topic/**", "/api/chat/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/ws/**", "/topic/**", "/api/chat/**", "/uploads/**").permitAll()
+                .anyRequest().permitAll()
             )
-            .csrf().disable(); // Disable CSRF only if needed for testing or sockets
+            .csrf().disable();
 
         return http.build();
     }
