@@ -4,12 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,12 +32,6 @@ public class FormController {
     // POST: Save form data and append to list in JSON file
     @PostMapping("/saveForm")
     public String saveForm(@RequestBody PersonForm form) {
-        System.out.println("Received raw request: " + form);
-
-        // DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-        // String isoTime = LocalDateTime.now().format(formatter);
-        // form.setTimestamp(isoTime);
-
         form.setTimestamp(LocalDateTime.now().toString());
         form.setId(UUID.randomUUID().toString()); // Generate unique ID
 
@@ -80,6 +78,81 @@ public class FormController {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    // PUT: Edit existing form by ID
+    @PutMapping("/editForm")
+    public String editForm(@RequestBody PersonForm updatedForm) {
+        File file = new File(FILE_PATH);
+        if (!file.exists())
+            return "No data found.";
+
+        try {
+            List<PersonForm> formList = readFormList(file);
+            boolean updated = false;
+
+            for (int i = 0; i < formList.size(); i++) {
+                if (formList.get(i).getId().equals(updatedForm.getId())) {
+                    updatedForm.setTimestamp(LocalDateTime.now().toString()); // Update timestamp
+                    formList.set(i, updatedForm);
+                    updated = true;
+                    break;
+                }
+            }
+
+            if (updated) {
+                objectMapper.writeValue(file, formList);
+                return "Form updated successfully!";
+            } else {
+                return "Form with ID not found.";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error updating form.";
+        }
+    }
+
+    // DELETE: Remove form by ID
+    @DeleteMapping("/deleteForm/{id}")
+    public String deleteForm(@PathVariable String id) {
+        File file = new File(FILE_PATH);
+        if (!file.exists())
+            return "No data found.";
+
+        try {
+            List<PersonForm> formList = readFormList(file);
+            Iterator<PersonForm> iterator = formList.iterator();
+            boolean removed = false;
+
+            while (iterator.hasNext()) {
+                PersonForm form = iterator.next();
+                if (form.getId().equals(id)) {
+                    iterator.remove();
+                    removed = true;
+                    break;
+                }
+            }
+
+            if (removed) {
+                objectMapper.writeValue(file, formList);
+                return "Form deleted successfully!";
+            } else {
+                return "Form with ID not found.";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error deleting form.";
+        }
+    }
+
+    // Helper to read JSON data
+    private List<PersonForm> readFormList(File file) throws IOException {
+        if (file.exists()) {
+            return objectMapper.readValue(file,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, PersonForm.class));
+        } else {
+            return new ArrayList<>();
         }
     }
 }
