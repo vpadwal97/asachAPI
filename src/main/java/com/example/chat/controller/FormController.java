@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,7 +42,8 @@ public class FormController {
             @RequestPart("form") PersonForm form,
             @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
-        if (form.getFname().isBlank() || form.getLname().isBlank() || form.getDob().isBlank() || form.getGender().isBlank()) {
+        if (form.getFname().isBlank() || form.getLname().isBlank() || form.getDob().isBlank()
+                || form.getGender().isBlank()) {
             return ResponseEntity.badRequest().body("Required fields are missing.");
         }
 
@@ -89,7 +91,8 @@ public class FormController {
                         // Delete old image
                         if (existingForm.getImagePath() != null) {
                             File oldImageFile = new File("uploads" + existingForm.getImagePath());
-                            if (oldImageFile.exists()) oldImageFile.delete();
+                            if (oldImageFile.exists())
+                                oldImageFile.delete();
                         }
 
                         String imagePath = saveImage(imageFile);
@@ -117,10 +120,38 @@ public class FormController {
         }
     }
 
+    @PutMapping("/reorderForms")
+    public ResponseEntity<?> reorderForms(@RequestBody List<PersonForm> orderedForms) {
+        File file = new File(FILE_PATH);
+        if (!file.exists()) {
+            return ResponseEntity.badRequest().body("No data found.");
+        }
+
+        try {
+            List<PersonForm> currentList = readFormList(file);
+            List<PersonForm> reorderedList = new ArrayList<>();
+
+            for (PersonForm form : orderedForms) {
+                currentList.stream()
+                        .filter(f -> f.getId().equals(form.getId()))
+                        .findFirst()
+                        .ifPresent(reorderedList::add);
+            }
+
+            objectMapper.writeValue(file, reorderedList);
+            return ResponseEntity.ok(reorderedList);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error reordering forms.");
+        }
+    }
+
     @GetMapping("/getSaveFormData")
     public ResponseEntity<?> getForms() {
         File file = new File(FILE_PATH);
-        if (!file.exists()) return ResponseEntity.ok(new ArrayList<>());
+        if (!file.exists())
+            return ResponseEntity.ok(new ArrayList<>());
 
         try {
             List<PersonForm> forms = readFormList(file);
@@ -134,7 +165,8 @@ public class FormController {
     @DeleteMapping("/deleteForm/{id}")
     public ResponseEntity<?> deleteForm(@PathVariable String id) {
         File file = new File(FILE_PATH);
-        if (!file.exists()) return ResponseEntity.badRequest().body("No data found.");
+        if (!file.exists())
+            return ResponseEntity.badRequest().body("No data found.");
 
         try {
             List<PersonForm> formList = readFormList(file);
@@ -146,7 +178,8 @@ public class FormController {
                 if (form.getId().equals(id)) {
                     if (form.getImagePath() != null) {
                         File image = new File("uploads" + form.getImagePath());
-                        if (image.exists()) image.delete();
+                        if (image.exists())
+                            image.delete();
                     }
 
                     iterator.remove();
@@ -171,7 +204,8 @@ public class FormController {
         File file = new File(FILE_PATH);
         File folder = file.getParentFile();
 
-        if (!folder.exists()) folder.mkdirs();
+        if (!folder.exists())
+            folder.mkdirs();
 
         try {
             List<PersonForm> formList;
@@ -201,7 +235,8 @@ public class FormController {
         String month = String.format("%02d", LocalDateTime.now().getMonthValue());
         String uploadDir = "uploads/images/forms/" + year + "/" + month;
         File uploadPath = new File(uploadDir);
-        if (!uploadPath.exists()) uploadPath.mkdirs();
+        if (!uploadPath.exists())
+            uploadPath.mkdirs();
 
         String extension = Objects.requireNonNull(imageFile.getOriginalFilename())
                 .substring(imageFile.getOriginalFilename().lastIndexOf("."));
