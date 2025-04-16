@@ -9,12 +9,14 @@ public class PersonForm {
     private String lname;
     private String dob;
     private String gender;
+    private String imagePath;
     private String timestamp;
 
     // ✅ Required no-arg constructor for Jackson
     public PersonForm() {
         this.id = UUID.randomUUID().toString(); // Generate ID for Jackson use
     }
+
     // Optional: Parameterized constructor for manual creation
     public PersonForm(
             String fname,
@@ -22,6 +24,7 @@ public class PersonForm {
             String lname,
             String dob,
             String gender,
+            String imagePath,
             String timestamp) {
         this.id = UUID.randomUUID().toString();
         this.fname = fname;
@@ -96,4 +99,13 @@ public class PersonForm {
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
 }
