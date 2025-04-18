@@ -1,0 +1,34 @@
+package com.example.chat.service;
+
+
+import java.util.Date;
+
+import org.springframework.stereotype.Service;
+
+// === JWTService.java ===
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
+@Service
+public class JWTService {
+    private final String secret = "738880d835d9afa7b89c0f49b2ffb609d5c15ac772396d30712f9dbaea76f769";
+    private final long expirationMs = 3600000; // 1 hour
+
+    public String generateToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
+
+    public String validateTokenAndGetUsername(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+}
